@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BMO2 Platform</title>
+<meta name="description" content="BMO2 One Platform — PT Berau Coal, Binungan Mine Operation 2">
+<meta name="theme-color" content="#0b3d16">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BMO2">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://script.google.com">
+<style>
+  :root{--green:#0b3d16;--green-2:#145c24;--lime:#7ac143;--ink:#eaf5ec;--muted:rgba(234,245,236,.72);}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--green);overflow:hidden;font-family:'Poppins',system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  #app{position:fixed;inset:0;width:100%;height:100%;border:0;display:block;background:#f4f8f4}
+  #splash{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;
+    background:radial-gradient(120% 80% at 50% 0%,var(--green-2) 0%,var(--green) 60%,#072a0f 100%);color:var(--ink);text-align:center;transition:opacity .45s ease,visibility .45s}
+  #splash.hide{opacity:0;visibility:hidden}
+  .tile{width:96px;height:96px;border-radius:26px;background:#fff;display:grid;place-items:center;box-shadow:0 18px 40px rgba(0,0,0,.28);animation:float 3s ease-in-out infinite}
+  .tile img{width:64px;height:64px}
+  .ring{position:relative;width:132px;height:132px;display:grid;place-items:center}
+  .ring::before{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid rgba(122,193,67,.18);border-top-color:var(--lime);animation:spin 1.1s linear infinite}
+  h1{font-size:1.35rem;font-weight:800;letter-spacing:-.01em}
+  p{font-size:.82rem;color:var(--muted);font-weight:500;min-height:1.2em}
+  .foot{position:absolute;bottom:calc(22px + env(safe-area-inset-bottom));font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(234,245,236,.5);font-weight:700}
+  #retry{display:none;margin-top:4px;border:0;border-radius:999px;padding:11px 22px;background:var(--lime);color:#0b2a10;font:700 .85rem 'Poppins',sans-serif;cursor:pointer}
+  #splash.err #retry{display:inline-block}
+  #splash.err .ring::before{animation:none;border-top-color:rgba(122,193,67,.18)}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes float{50%{transform:translateY(-5px)}}
+  @media (prefers-reduced-motion:reduce){.tile,.ring::before{animation:none}}
+</style>
+</head>
+<body>
+<iframe id="app" title="BMO2 Platform" allow="fullscreen; clipboard-write; geolocation" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+<div id="splash" role="status" aria-live="polite">
+  <div class="ring"><div class="tile"><img src="icons/icon-192.png" alt=""></div></div>
+  <h1>BMO2 Platform</h1>
+  <p id="msg">Menyiapkan aplikasi…</p>
+  <button id="retry" type="button">Coba lagi</button>
+  <div class="foot">One Site · One View</div>
+</div>
+<script>
+(function () {
+  'use strict';
+  var EXEC = 'https://script.google.com/macros/s/AKfycbwJN01bEeApwIw9SGLsdUJVpELO_zsFeMRD8oLxSV6Hbr6wxTJ2Cvl-esEuiwUisEPz/exec';
+  var PAGES = ['intro','auth','home','operation','hs','environment','social','pip','tech','profile','admin'];
+  var frame = document.getElementById('app'), splash = document.getElementById('splash'), msg = document.getElementById('msg');
+  function store(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+  function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+
+  // halaman awal: ?page=... (pintasan aplikasi) atau halaman terakhir, default Beranda
+  var q = new URLSearchParams(location.search), start = q.get('page');
+  if (PAGES.indexOf(start) < 0) start = read('bmo2app_last');
+  if (PAGES.indexOf(start) < 0 || start === 'auth' || start === 'intro') start = 'home';
+
+  var loadTimer = null;
+  function showSplash(text) { msg.textContent = text; splash.classList.remove('hide', 'err'); }
+  function hideSplash() { clearTimeout(loadTimer); splash.classList.add('hide'); }
+  function open(url) {
+    if (!navigator.onLine) { showSplash('Tidak ada koneksi internet. Sambungkan lalu coba lagi.'); splash.classList.add('err'); return; }
+    var m = url.match(/[?&]page=([a-z]+)/); if (m && PAGES.indexOf(m[1]) >= 0 && m[1] !== 'auth' && m[1] !== 'intro') store('bmo2app_last', m[1]);
+    clearTimeout(loadTimer);
+    loadTimer = setTimeout(function () { msg.textContent = 'Koneksi lambat, mohon tunggu…'; }, 12000);
+    frame.src = url;
+  }
+  frame.addEventListener('load', function () {
+    try { if (frame.contentWindow.location.href === 'about:blank') return; } catch (e) { /* lintas-asal = halaman BMO2 sudah termuat */ }
+    setTimeout(hideSplash, 350);
+  });
+
+  // permintaan pindah halaman dari BMO2 Platform (di dalam bingkai) — hanya dari Apps Script & hanya ke alamat BMO2
+  window.addEventListener('message', function (e) {
+    if (!/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(e.origin)) return;
+    var d = e.data; if (!d || d.type !== 'bmo2-nav' || typeof d.url !== 'string') return;
+    if (d.url.indexOf(EXEC) !== 0) return;
+    open(d.url);
+  });
+
+  document.getElementById('retry').addEventListener('click', function () { showSplash('Menyiapkan aplikasi…'); open(EXEC + '?page=' + start); });
+  window.addEventListener('online', function () { if (splash.classList.contains('err')) document.getElementById('retry').click(); });
+
+  open(EXEC + '?page=' + start);
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  }
+})();
+</script>
+</body>
+</html>
