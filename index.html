@@ -58,18 +58,16 @@
   function store(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
   function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 
-  // halaman awal: ?page=... (pintasan aplikasi) atau halaman terakhir, default Beranda
+  // halaman awal: intro (bumi berputar) seperti versi lokal; pintasan aplikasi (?page=...) langsung ke dashboard
   var q = new URLSearchParams(location.search), start = q.get('page');
-  if (PAGES.indexOf(start) < 0) start = read('bmo2app_last');
-  if (PAGES.indexOf(start) < 0 || start === 'auth' || start === 'intro') start = 'home';
+  if (PAGES.indexOf(start) < 0 || start === 'auth') start = 'intro';
 
   var loadTimer = null;
   function showSplash(text) { msg.textContent = text; splash.classList.remove('hide', 'err'); }
   function hideSplash() { clearTimeout(loadTimer); splash.classList.add('hide'); }
   function open(url) {
     if (!navigator.onLine) { showSplash('Tidak ada koneksi internet. Sambungkan lalu coba lagi.'); splash.classList.add('err'); return; }
-    var m = url.match(/[?&]page=([a-z]+)/); if (m && PAGES.indexOf(m[1]) >= 0 && m[1] !== 'auth' && m[1] !== 'intro') store('bmo2app_last', m[1]);
-    clearTimeout(loadTimer);
+        clearTimeout(loadTimer);
     loadTimer = setTimeout(function () { msg.textContent = 'Koneksi lambat, mohon tunggu…'; }, 12000);
     frame.src = url;
   }
