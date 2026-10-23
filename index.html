@@ -35,6 +35,11 @@
   #retry{display:none;margin-top:4px;border:0;border-radius:999px;padding:11px 22px;background:var(--lime);color:#0b2a10;font:700 .85rem 'Poppins',sans-serif;cursor:pointer}
   #splash.err #retry{display:inline-block}
   #splash.err .ring::before{animation:none;border-top-color:rgba(122,193,67,.18)}
+  #fb{position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:6;display:none;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:#fff;color:#123018;box-shadow:0 12px 34px rgba(0,0,0,.22);font-size:.8rem;font-weight:500}
+  #fb.show{display:flex}
+  #fb span{flex:1;line-height:1.35}
+  #fb a{flex:none;text-decoration:none;background:var(--green);color:#fff;font-weight:700;padding:9px 14px;border-radius:999px}
+  #fb button{flex:none;border:0;background:none;font-size:1.1rem;color:#6b7d6e;cursor:pointer}
   @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes float{50%{transform:translateY(-5px)}}
   @media (prefers-reduced-motion:reduce){.tile,.ring::before{animation:none}}
@@ -42,6 +47,7 @@
 </head>
 <body>
 <iframe id="app" title="BMO2 Platform" allow="fullscreen; clipboard-write; geolocation" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+<div id="fb" role="alert"><span>Halaman belum tampil? Browser ini mungkin memblokir aplikasi.</span><a id="fbGo" href="#">Buka langsung</a><button type="button" id="fbX" aria-label="Tutup">✕</button></div>
 <div id="splash" role="status" aria-live="polite">
   <div class="ring"><div class="tile"><img src="icons/icon-192.png" alt=""></div></div>
   <h1>BMO2 Platform</h1>
@@ -69,17 +75,23 @@
     if (!navigator.onLine) { showSplash('Tidak ada koneksi internet. Sambungkan lalu coba lagi.'); splash.classList.add('err'); return; }
         clearTimeout(loadTimer);
     loadTimer = setTimeout(function () { msg.textContent = 'Koneksi lambat, mohon tunggu…'; }, 12000);
-    frame.src = url;
+    cur = url; alive = false; frame.src = url; armFallback();
   }
   frame.addEventListener('load', function () {
     try { if (frame.contentWindow.location.href === 'about:blank') return; } catch (e) { /* lintas-asal = halaman BMO2 sudah termuat */ }
     setTimeout(hideSplash, 350);
   });
 
+  // bila BMO2 Platform tidak memberi tanda hidup (mis. browser memblokir bingkai), tawarkan buka langsung
+  var alive = false, fb = document.getElementById('fb'), cur = '';
+  function armFallback() { setTimeout(function () { if (!alive) { document.getElementById('fbGo').href = cur; fb.classList.add('show'); } }, 20000); }
+  document.getElementById('fbX').addEventListener('click', function () { fb.classList.remove('show'); });
   // permintaan pindah halaman dari BMO2 Platform (di dalam bingkai) — hanya dari Apps Script & hanya ke alamat BMO2
   window.addEventListener('message', function (e) {
     if (!/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(e.origin)) return;
-    var d = e.data; if (!d || d.type !== 'bmo2-nav' || typeof d.url !== 'string') return;
+    var d = e.data; if (!d) return;
+    if (d.type === 'bmo2-alive' || d.type === 'bmo2-ready') { alive = true; fb.classList.remove('show'); hideSplash(); return; }
+    if (d.type !== 'bmo2-nav' || typeof d.url !== 'string') return;
     if (d.url.indexOf(EXEC) !== 0) return;
     open(d.url);
   });

@@ -1,5 +1,5 @@
 /* BMO2 Platform app shell — menyimpan kerangka aplikasi supaya cepat dibuka; data tetap diambil langsung dari BMO2 Platform. */
-const CACHE = 'bmo2-app-v3';
+const CACHE = 'bmo2-app-v4';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/favicon.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => {
